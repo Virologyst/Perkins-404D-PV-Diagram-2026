@@ -1,0 +1,41 @@
+﻿# Dependencies and packages — binary/generated, no useful context
+Dependencies/
+packages/
+node_modules/
+
+# Build output
+bin/
+obj/
+Debug/
+Release/
+x86/
+x64/
+
+# Auto-generated designer files (layout XML, not hand-written)
+*.Designer.cs
+*.designer.cs
+
+# Resource files
+*.resx
+*.resources
+
+# Visual Studio internals
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Build artifacts
+*.exe
+*.dll
+*.pdb
+*.cache
+
+# OS files
+Thumbs.db
+.DS_Store

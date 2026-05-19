@@ -1,0 +1,247 @@
+using NationalInstruments;
+using NationalInstruments.DAQmx;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
+
+
+namespace Engine_Practical
+{
+    public partial class Form1 : Form
+    {
+        public bool Calibration = true;
+        
+        public double analogPDataIn;
+        public double analogCASDataIn;
+        public bool[,] digitalDataIn;
+        public double[,] CASPTemp;
+        public double CAS_Offset;
+        public String series = "PV";
+
+        public DigitalMultiChannelReader reader_V;
+        public AnalogSingleChannelReader reader_P;
+        public AnalogSingleChannelReader reader_CAS;
+        public AnalogMultiChannelReader reader_CASP;
+
+        public List<double> listX = new List<double>();
+        public List<double> listY = new List<double>();
+
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            timer1.Tick += timer1_Tick_1;
+        }
+
+        private void chart1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            if (button2.BackColor == System.Drawing.Color.FromArgb(0, 60, 113))
+            {
+                button2.BackColor = System.Drawing.Color.White;
+                button2.ForeColor = System.Drawing.Color.Black; 
+                button3.BackColor = System.Drawing.Color.FromArgb(0, 60, 113);
+                button3.ForeColor = System.Drawing.Color.White;
+                //set up chart
+                this.chart1.Series.Clear();
+
+                chart1.Series.Add(series);
+                chart1.Series[0].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+
+                ////set up sensor Pressure
+                //NationalInstruments.DAQmx.Task DAQ_Task_P = new NationalInstruments.DAQmx.Task();
+                //AIChannel PressureAIChannel;
+                //PressureAIChannel = DAQ_Task_P.AIChannels.CreateVoltageChannel(
+                //"SensorHub/AI0", //name
+                //"PressureAIChannel", //leave as is
+                //AITerminalConfiguration.Differential, // for the rest we will probably need to experiment and find out
+                //0,
+                //10,
+                //AIVoltageUnits.Volts
+                //);
+                ////Set up sensor CAS
+                //NationalInstruments.DAQmx.Task DAQ_Task_CAS = new NationalInstruments.DAQmx.Task();
+                //AIChannel CASAIChannel;
+                //CASAIChannel = DAQ_Task_CAS.AIChannels.CreateVoltageChannel(
+                //"SensorHub/AI1", //name
+                //"CASAIChannel", //leave as is
+                //AITerminalConfiguration.Differential, // for the rest we will probably need to experiment and find out
+                //0,
+                //10,
+                //AIVoltageUnits.Volts
+                //);
+
+                //Setup Multichannel Pressure/CAS (analog)
+                NationalInstruments.DAQmx.Task DAQ_Task_CASP = new NationalInstruments.DAQmx.Task();
+                AIChannel CASPAIChannel;
+                CASPAIChannel = DAQ_Task_CASP.AIChannels.CreateVoltageChannel(
+                "SensorHub/AI0,SensorHub/AI1",
+                "CASPAIChannel",
+                AITerminalConfiguration.Differential,
+                0,
+                10, // TODO: confirm voltage of sensors - if different different setup will be required.
+                AIVoltageUnits.Volts
+                );
+
+                //Setup TDC sensor (digital)
+                NationalInstruments.DAQmx.Task DAQ_Task_V = new NationalInstruments.DAQmx.Task();
+                DIChannel VolumeDIChannel;
+                VolumeDIChannel = DAQ_Task_V.DIChannels.CreateChannel(
+                "Volume/Port0/line0,Volume/Port0/line1", //name (12,13,14,16) //TODO: remove extra channel
+                "VolumeDIChannel", //leave as is
+                ChannelLineGrouping.OneChannelForAllLines
+                );
+
+                //Setup channel readers for sensors
+                //Digital reader - TDC
+                reader_V = new
+                DigitalMultiChannelReader(DAQ_Task_V.Stream);
+                digitalDataIn = reader_V.ReadSingleSampleMultiLine();
+
+                //Analog reader - CAS and pressure
+                reader_CASP = new
+                AnalogMultiChannelReader(DAQ_Task_CASP.Stream);
+                analogPDataIn = reader_CASP.ReadMultiSample(2)[0,0];
+                analogCASDataIn = reader_CASP.ReadMultiSample(2)[0,1];
+
+                //reader_CAS = new
+                //AnalogSingleChannelReader(DAQ_Task_CAS.Stream);
+                //analogCASDataIn = reader_CAS.ReadSingleSample();
+
+                //reader_P = new
+                //AnalogSingleChannelReader(DAQ_Task_P.Stream);
+                //analogPDataIn = reader_P.ReadSingleSample();
+
+                //while (Calibration)
+                //{
+                //    digitalDataIn = reader_V.ReadSingleSampleMultiLine();
+                //    analogCASDataIn = reader_CASP.ReadMultiSample(2)[0, 1];
+                //    if (digitalDataIn[0,1] == true){ //TDC
+                //        CAS_Offset = analogCASDataIn;
+                //        Calibration = false;
+                //    }
+                //}
+
+                timer1.Start();
+            }
+            else
+            {
+
+            }
+                        
+        }
+
+        private void button3_Click_1(object sender, EventArgs e)
+        {
+            if (button3.BackColor == System.Drawing.Color.FromArgb(0, 60, 113))
+            {
+                button2.BackColor = System.Drawing.Color.FromArgb(0, 60, 113);
+                button2.ForeColor = System.Drawing.Color.White;
+                button3.BackColor = System.Drawing.Color.White;
+                button3.ForeColor = System.Drawing.Color.Black;
+                timer1.Stop();
+            }
+            else
+            {
+
+            }
+        }
+        private void timer1_Tick_1(object sender, EventArgs e)
+        {
+            //add to list of data points
+            digitalDataIn = reader_V.ReadSingleSampleMultiLine();
+            //analogPDataIn = reader_P.ReadSingleSample();
+            //analogCASDataIn = reader_CAS.ReadSingleSample();
+
+            //multichannel
+            CASPTemp = reader_CASP.ReadMultiSample(2);
+
+            listX.Add(CASPTemp[0, 0]);
+            listY.Add(CASPTemp[0, 1]);
+
+            Debug.WriteLine("Pressure: "+ CASPTemp[0, 0]);
+
+            Debug.WriteLine("CAS: "+ CASPTemp[0, 1]);
+
+            //Debug.WriteLine(digitalDataIn[0, 0] + " " + digitalDataIn[0, 1]);
+
+            //add to graph
+            DataPoint data = new DataPoint(listX.Last(), listY.Last()); //can we speed this up?
+
+            chart1.Series[0].Points.Add(data);
+
+            data.Dispose();
+
+        }
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            // Convert listA and listB to double arrays
+            double[] x = listX.ToArray();
+            double[] y = listY.ToArray();
+
+            // Create a filename with date and time separated
+            string filename = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".csv";
+
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.Filter = "CSV (*.csv|*.csv|All files (*.*)|*.*";
+                saveFileDialog.Title = "Save Chart Data";
+                saveFileDialog.FileName = filename;
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        using (StreamWriter writer = new StreamWriter(saveFileDialog.FileName))
+                        {
+                            for (int i = 0; i < x.Length; i++)
+                            {
+                                writer.WriteLine($"{x[i]},{y[i]}");
+                            }
+                        }
+                        MessageBox.Show("Data saved successfully.", "Save", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error saving data: " + ex.Message);
+                    }
+                }
+            }
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        public class DataClass // what is this can we remove it?
+        {
+              public double X { get; set; }
+              public double Y { get; set; }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
+
+// put in calibration button

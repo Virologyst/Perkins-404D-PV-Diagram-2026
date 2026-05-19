@@ -1,0 +1,34 @@
+# Build output
+bin/
+obj/
+Debug/
+Release/
+x86/
+x64/
+
+# Dependencies / NI binaries
+Dependencies/
+packages/
+
+# Visual Studio / Rider IDE files
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Build artefacts
+*.exe
+*.dll
+*.pdb
+*.cache
+
+# OS files
+Thumbs.db
+.DS_Store
